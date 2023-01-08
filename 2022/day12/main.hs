@@ -13,76 +13,57 @@ import qualified Data.Sequence as Seq
 import qualified Data.Set as Set
 import Algorithm.Search
 
-main = print. solveEasy =<< getFileContents
+main = print. solveHard =<< getFileContents
     where getFileContents = readFile. head =<< getArgs
 
 type Index = (Int, Int)
 type Start = Index
 type End = Index
 type Grid = Array Index Char
-type StateEasy = (Grid, Start, End)
-type IsEnd = Index -> Bool
-type StateHard = (Grid, Start)
+type State = (Grid, Start, End)
 type CanMove = Char -> Char -> Bool
-
 type Result = Maybe Int
+
 solveEasy :: String -> Result
 solveEasy = getResultEasy. parseEasy
 
 solveHard :: String -> Result
 solveHard = getResultHard. parseHard
 
-getResultEasy :: StateEasy -> Result
-getResultEasy (grid, start, end) = fmap length $ bfs (neighboursEasy grid) (== end) start
+getResultEasy :: State -> Result
+getResultEasy (grid, start, end) = length <$> bfs (neighbours grid canClimb) (== end) start
 
-getResultHard :: StateHard -> Result
-getResultHard (grid, start) = fmap length $ bfs (neighboursHard grid) isEnd start
+getResultHard :: State -> Result
+getResultHard (grid, _, end) = length <$> bfs (neighbours grid canDescend) isLowest end
     where
-    isEnd idx = element == 'a' || element == 'S'
-        where element = grid ! idx
+    isLowest idx = grid ! idx == 'a'
 
-neighboursEasy :: Grid -> Index -> [Index]
-neighboursEasy grid cur = neighbours grid cur canClimb
-
-neighboursHard :: Grid -> Index -> [Index]
-neighboursHard grid cur = neighbours grid cur canDescend
-
-neighbours :: Grid -> Index -> CanMove -> [Index]
-neighbours grid cur@(x, y) canMove =
-    filter canGo [(x+1, y), (x-1, y), (x, y+1), (x, y-1)]
+neighbours :: Grid -> CanMove -> Index -> [Index]
+neighbours grid canMove cur@(x, y) = filter canGo [(x+1, y), (x-1, y), (x, y+1), (x, y-1)]
     where
-    canGo idx = inBounds idx && canMove (grid ! cur) (grid ! idx)
+    canGo nxt = inBounds nxt && canMove (grid ! cur) (grid ! nxt)
     inBounds = inRange (bounds grid)
 
 canClimb :: Char -> Char -> Bool
-canClimb cur 'E' = cur == 'z'
-canClimb 'S' nxt = nxt == 'a'
 canClimb cur nxt = ord cur + 1 >= ord nxt
 
 canDescend :: Char -> Char -> Bool
 canDescend cur nxt = canClimb nxt cur
 
-parseEasy :: String -> StateEasy
-parseEasy input = (grid, startIndex, endIndex)
+parseEasy :: String -> State
+parseEasy input = (simplifiedGrid, startIndex, endIndex)
     where
-    grid = getGrid input
-    startIndex = getIndex (== 'S'). assocs $ grid
-    endIndex = getIndex (== 'E'). assocs $ grid
-
-parseHard :: String -> StateHard
-parseHard input = (grid, startIndex)
-    where
-    grid = getGrid input
-    startIndex = getIndex (== 'E'). assocs $ grid
-
-getGrid :: String -> Grid
-getGrid input = grid
-    where
-    asLines = lines input
-    rows = length asLines
-    columns = length. head $ asLines
-    elems = concat asLines
     grid = listArray ((1, 1), (rows, columns)) elems
+        where
+        asLines = lines input
+        rows = length asLines
+        columns = length. head $ asLines
+        elems = concat asLines
+    startIndex = getIndex (== 'S') grid
+    endIndex = getIndex (== 'E') grid
+    getIndex match = fst. fromJust. LE.find (match. snd). assocs
+    simplifiedGrid = grid // [(startIndex, 'a'), (endIndex, 'z')]
 
-getIndex :: (a -> Bool) -> [(Index, a)] -> Index
-getIndex f = fromJust. fmap fst. LE.find (f. snd)
+parseHard :: String -> State
+parseHard = parseEasy
+
