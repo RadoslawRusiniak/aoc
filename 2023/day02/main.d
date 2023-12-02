@@ -5,6 +5,7 @@ import std.algorithm, std.functional, std.meta;
 import std.array, std.container;
 import std.bigint;
 import std.conv;
+import std.format;
 import std.math, std.numeric;
 import std.range, std.range.interfaces;
 import std.stdio, std.string;
@@ -32,11 +33,8 @@ void main(string[] args) {
 
 Game[] parseInput(string[] input) {
     CubeInfo parseCubeInfo(string input) {
-        // debug { input.writeln; }
-        
-        auto splitted = input.strip.split(" ");
-        auto cnt = splitted[0].to!int;
-        auto clr = splitted[1];
+        int cnt; string clr;
+        input.strip.formattedRead("%d %s", cnt, clr);
         return CubeInfo(cnt, clr);
     }
 
@@ -45,7 +43,8 @@ Game[] parseInput(string[] input) {
     Game parseLine(string input) {
         auto gameNumberAndDraws = input.split(":");
 
-        auto id = gameNumberAndDraws[0]["Game ".length .. $].to!int;
+        int id;
+        gameNumberAndDraws[0].formattedRead("Game %d", id);
 
         auto draws = gameNumberAndDraws[1].split(";").map!parseDraw.array;
 
