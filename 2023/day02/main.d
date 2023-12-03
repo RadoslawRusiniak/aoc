@@ -38,7 +38,12 @@ Game[] parseInput(string[] input) {
         return CubeInfo(cnt, clr);
     }
 
-    Draw parseDraw(string input) { return input.split(",").map!parseCubeInfo.array; }
+    Draw parseDraw(string input) { 
+        return input.split(",").map!parseCubeInfo.array;
+        // Draw d;
+        // d = input.strip.unformatValue!Draw("%(%d %s, %)");
+        // return d;
+    }
 
     Game parseLine(string input) {
         auto gameNumberAndDraws = input.split(":");
@@ -54,6 +59,8 @@ Game[] parseInput(string[] input) {
     return input.map!parseLine.array;
 }
 
+int solveEasy(Game[] games) => games.filter!possibleGame.map!(g => g.id).sum;
+
 bool possibleGame(Game game) {
     auto bag = ["red": 12, "green": 13, "blue": 14];
 
@@ -65,7 +72,18 @@ bool possibleGame(Game game) {
     return game.draws.all!possibleDraw;
 }
 
-int solveEasy(Game[] games) => games.filter!possibleGame.map!(g => g.id).sum;
+int powerOfCubesInTheGameFunctional(Game game) {
+    int maxForColor(string color) {
+        bool isOfRelevantColor(CubeInfo cubeInfo) => cubeInfo.color == color;
+
+        int maxForDraw(Draw draw) => 
+            draw.filter!isOfRelevantColor.map!(ci => ci.count).maxElement(0);
+
+        return game.draws.map!maxForDraw.maxElement;
+    }
+
+    return ["red", "green", "blue"].map!maxForColor.fold!((a, b) => a * b);
+}
 
 int powerOfCubesInTheGame(Game game) {
     auto bag = ["red": 0, "green": 0, "blue": 0];
