@@ -18,13 +18,13 @@ void main(string[] args) {
     string line;
     while ((line = readln.strip) !is null) { input ~= line; }
 
-    auto res = solveEasy(input);
-    //auto res = solveHard(input);
+    // auto res = solveEasy(input);
+    auto res = solveHard(input);
 
     res.writeln;
 }
 
-Tuple!(int[], int[])[] parseInputEasy(string[] input) {
+Tuple!(int[], int[])[] parseInput(string[] input) {
     Tuple!(int[], int[]) parseLine(string input) {
         auto cardNumberAndCards = input.split(":");
         auto arrays = cardNumberAndCards[1].split("|");
@@ -38,17 +38,29 @@ Tuple!(int[], int[])[] parseInputEasy(string[] input) {
     return input.map!parseLine.array;
 }
 
+int countMatches(Tuple!(int[], int[]) a) =>
+    setIntersection(a[0].sort, a[1].sort).walkLength;
+
 int solveEasy(string[] input) {
-    auto arrays = parseInputEasy(input);
-
-    int solveCase(Tuple!(int[], int[]) a) =>
-        setIntersection(a[0].sort, a[1].sort).walkLength;
-
     int countToScore(int cnt) => cnt == 0 ? 0 : 2 ^^ (cnt-1);
 
-    return arrays.map!(pipe!(solveCase, countToScore)).sum;
+    return input.parseInput.map!(pipe!(countMatches, countToScore)).sum;
 }
 
-int solveHard(string[] input) {
-    return 0;
+int countsToScore(int[] counts) {
+    int sum;
+    auto toAdd = new int[] (counts.length + 1);
+    auto currentSz = 1;
+    foreach (i, cnt; counts) {
+        currentSz += toAdd[i];
+
+        sum += currentSz * cnt + 1;
+
+        toAdd[i+1] += currentSz;
+        toAdd[i+1+cnt] -= currentSz;
+    }
+
+    return sum;
 }
+
+int solveHard(string[] input) => input.parseInput.map!countMatches.array.countsToScore;
