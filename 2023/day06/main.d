@@ -24,11 +24,7 @@ void main(string[] args) {
     string line;
     while ((line = readln.strip) !is null) { input ~= line; }
 
-    auto state = input.parse;
-
-    debug { state.writeln; }
-
-    auto res = solveEasy(state);
+    auto res = solveEasy(input);
     // auto res = solveHard(state);
 
     res.writeln;
@@ -40,7 +36,7 @@ Times parseTimes(string input) => input.parseArrayLine;
 
 Distances parseDistances(string input) => input.parseArrayLine;
 
-State parse(string[] input) {
+State parseEasy(string[] input) {
     auto ts = input[0].parseTimes;
     auto ds = input[1].parseDistances;
     return State(ts, ds);
@@ -51,10 +47,13 @@ ResultType numberOfWaysToBeat(Race race)
     iota(1, race.time)
     .count!(speed => speed * (race.time - speed) > race.distance);
 
-ResultType solveEasy(State state)
+Race[] toRaces(State state) => zip(state.times, state.distances).map!Race.array;
+
+ResultType solveEasy(string[] input)
     =>
-    zip(state.times, state.distances)
-    .map!(pipe!(Race, numberOfWaysToBeat))
+    input.parseEasy
+    .toRaces
+    .map!numberOfWaysToBeat
     .fold!((a, b) => a * b);
 
 ResultType solveHard(State state) {
