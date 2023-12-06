@@ -12,11 +12,11 @@ import std.stdio, std.string;
 import std.ascii, std.typecons;
 import std.datetime.date, std.datetime.systime;
 
-alias ResultType = int;
+alias ResultType = long;
 
 alias Times = int[];
 alias Distances = int[];
-alias Race = Tuple!(int, "time", int, "distance");
+alias Race = Tuple!(long, "time", long, "distance");
 alias State = Tuple!(Times, "times", Distances, "distances");
 
 void main(string[] args) {
@@ -24,8 +24,8 @@ void main(string[] args) {
     string line;
     while ((line = readln.strip) !is null) { input ~= line; }
 
-    auto res = solveEasy(input);
-    // auto res = solveHard(state);
+    // auto res = solveEasy(input);
+    auto res = solveHard(input);
 
     res.writeln;
 }
@@ -56,6 +56,62 @@ ResultType solveEasy(string[] input)
     .map!numberOfWaysToBeat
     .fold!((a, b) => a * b);
 
-ResultType solveHard(State state) {
-    return 0;
+long parseHardLine(string input) => input.split(":")[1].filter!isDigit.to!long;
+
+Race parseHard(string[] input) {
+    auto time = input[0].parseHardLine;
+    auto distance = input[1].parseHardLine;
+    return Race(time, distance);
+}
+
+BigInt getDist(Race r, long speed) => speed.to!BigInt * (r.time - speed);
+
+ResultType solveHard(string[] input) {
+    auto race = input.parseHard;
+    debug { race.writeln; }
+    
+    long le = 1, r = race.time - 1;
+    while (le < r) {
+        auto m = (le + r) / 2;
+        if (getDist(race, m) < getDist(race, m + 1)) {
+            le = m + 1;
+        } else {
+            r = m;
+        }
+    }
+
+    auto peak = le;
+    debug { iota(peak-1, peak+2).map!(speed => getDist(race, speed)).writeln; }
+
+    if (getDist(race, peak) <= race.distance.to!BigInt) {
+        return 0;
+    }
+
+    le = 1, r = peak;
+    while (le < r) {
+        auto m = (le + r) / 2;
+        if (getDist(race, m) <= race.distance) {
+            le = m + 1;
+        } else {
+            r = m;
+        }
+    }
+
+    auto rangeL = le;
+
+    le = peak, r = race.time - 1;
+    while (le < r) {
+        auto m = (le + r) / 2;
+        if (getDist(race, m) > race.distance) {
+            le = m + 1;
+        } else {
+            r = m; 
+        }
+    }
+
+    auto rangeR = le;
+
+    debug { writeln(rangeL, " ", rangeR); }
+
+    return rangeR - rangeL;
 }
