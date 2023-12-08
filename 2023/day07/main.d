@@ -29,8 +29,8 @@ void main(string[] args) {
     string line;
     while ((line = readln.strip) !is null) { input ~= line; }
 
-    auto res = solveEasy(input);
-    // auto res = solveHard(input);
+    // auto res = solveEasy(input);
+    auto res = solveHard(input);
 
     res.writeln;
 }
@@ -81,8 +81,14 @@ HandType getHandTypeEasy(Hand h) {
 
 HandStrength getHandStrengthEasy(Hand h) => tuple(h.getHandTypeEasy, h);
 
+Card[] possibleCards(Card c) => c == 11 ? iota(2, 15).array : [c];
+
 HandType getHandTypeHard(Hand h) {
-    return 0;
+    auto possibilies = h.map!possibleCards.array;
+
+    return cartesianProduct(possibilies[0], possibilies[1], possibilies[2], possibilies[3], possibilies[4])
+        .map!(t => [t[0], t[1], t[2], t[3], t[4]])
+        .map!getHandTypeEasy.maxElement;
 }
 
 Hand toTieBreakerHard(Hand h) => h.replace(11, 1);
