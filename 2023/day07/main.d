@@ -55,7 +55,7 @@ HandWithBid parseLine(string input) {
 
 State parse(string[] input) => input.map!parseLine.array;
 
-HandType getHandType(Hand h) {
+HandType getHandTypeEasy(Hand h) {
     auto grouped = h.dup.sort.group.save;
 
     if (grouped.count == 1) { return 6; }
@@ -79,17 +79,25 @@ HandType getHandType(Hand h) {
     return 0;
 }
 
-HandStrength getHandStrength(Hand h) => tuple(h.getHandType, h);
+HandStrength getHandStrengthEasy(Hand h) => tuple(h.getHandTypeEasy, h);
 
-ResultType solveEasy(string[] input)
+HandType getHandTypeHard(Hand h) {
+    return 0;
+}
+
+Hand toTieBreakerHard(Hand h) => h.replace(11, 1);
+
+HandStrength getHandStrengthHard(Hand h) => tuple(h.getHandTypeHard, h.toTieBreakerHard);
+
+ResultType solve(string[] input, HandStrength function(Hand) comparer)
     =>
     input
     .parse
-    .schwartzSort!(hwb => hwb.hand.getHandStrength)
+    .schwartzSort!(hwb => comparer(hwb.hand))
     .enumerate(1)
     .map!(t => t[0].to!long * t[1].bid)
     .sum(0L);
 
-ResultType solveHard(string[] input) {
-    return 0;
-}
+ResultType solveEasy(string[] input) => solve(input, h => h.getHandStrengthEasy);
+
+ResultType solveHard(string[] input) => solve(input, h => h.getHandStrengthHard);
