@@ -84,9 +84,9 @@ HandStrength getHandStrengthEasy(Hand h) => tuple(h.getHandTypeEasy, h);
 Card[] possibleCards(Card c) => c == 11 ? iota(2, 15).array : [c];
 
 HandType getHandTypeHard(Hand h) {
-    auto possibilies = h.map!possibleCards.array;
+    auto possibilities = h.map!possibleCards.array;
 
-    return cartesianProduct(possibilies[0], possibilies[1], possibilies[2], possibilies[3], possibilies[4])
+    return cartesianProduct(possibilities[0], possibilities[1], possibilities[2], possibilities[3], possibilities[4])
         .map!(t => [t[0], t[1], t[2], t[3], t[4]])
         .map!getHandTypeEasy.maxElement;
 }
@@ -95,11 +95,11 @@ Hand toTieBreakerHard(Hand h) => h.replace(11, 1);
 
 HandStrength getHandStrengthHard(Hand h) => tuple(h.getHandTypeHard, h.toTieBreakerHard);
 
-ResultType solve(string[] input, HandStrength function(Hand) comparer)
+ResultType solve(string[] input, HandStrength function(Hand) hashFun)
     =>
     input
     .parse
-    .schwartzSort!(hwb => comparer(hwb.hand))
+    .schwartzSort!(hwb => hashFun(hwb.hand))
     .enumerate(1)
     .map!(t => t[0].to!long * t[1].bid)
     .sum(0L);
