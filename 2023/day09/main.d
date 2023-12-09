@@ -32,7 +32,7 @@ int solveLine(int[] line) {
     diffs ~= line;
     do {
         diffs ~= 
-            zip(diffs.back[1 .. $], diffs.back)
+            zip(diffs.back.dropOne, diffs.back)
             .map!(t => t[0] - t[1])
             .array;
     } while (!diffs.back.all!(x => x == 0));
