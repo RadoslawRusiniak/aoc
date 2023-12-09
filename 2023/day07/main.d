@@ -88,6 +88,7 @@ HandType getHandTypeHard(Hand h) {
 
     return cartesianProduct(possibilities[0], possibilities[1], possibilities[2], possibilities[3], possibilities[4])
         .map!(t => [t[0], t[1], t[2], t[3], t[4]])
+        .array.sort.uniq
         .map!getHandTypeEasy.maxElement;
 }
 
