@@ -17,8 +17,8 @@ void main(string[] args) {
     string line;
     while ((line = readln.strip) !is null) { input ~= line; }
 
-    auto res = solveEasy(input);
-    // auto res = solveHard(input);
+    // auto res = solveEasy(input);
+    auto res = solveHard(input);
 
     res.writeln;
 }
@@ -37,7 +37,7 @@ int solveLine(int[] line) {
             .array;
     } while (!diffs.back.all!(x => x == 0));
 
-    // diffs[$ - 1] ~= 0;
+    diffs[$ - 1] ~= 0;
 
     foreach_reverse (i; 0 .. diffs.length - 1) {
         auto above = diffs[i+1];
@@ -49,14 +49,6 @@ int solveLine(int[] line) {
     return diffs[0].back;
 }
 
-long solveEasy(string[] input) {
-    auto state = input.parse;
+long solveEasy(string[] input) => input.parse.map!solveLine.sum(0L);
 
-    auto solutions = state.map!solveLine;
-
-    return solutions.sum(0L);
-}
-
-long solveHard(string[] input) {
-    return 0;
-}
+long solveHard(string[] input) => input.parse.map!(a => a.retro.array).map!solveLine.sum(0L);
