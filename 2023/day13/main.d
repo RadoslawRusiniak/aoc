@@ -17,31 +17,43 @@ void main(string[] args) {
     string line;
     while ((line = readln.strip) !is null) { input ~= line; }
 
-    auto res = solveEasy(input);
-    // auto res = solveHard(input);
+    // auto res = solveEasy(input);
+    auto res = solveHard(input);
 
     res.writeln;
 }
 
-bool isHorizontalReflection(string[] input, int x) {
+bool isHorizontalReflectionEasy(string[] input, int x) {
     auto res = input[x..$].zip(input[0..x].retro).all!(t => t[0] == t[1]);
 
     debug { writeln(input, ' ', x, ' ', res); }
     return res;
-} 
+}
 
-int gethorizontalReflectionsScore(string[] input)
+int getHorizontalReflectionsScore(string[] input, bool function(string[], int) isHorizontalReflection)
     => 
     iota(1, input.length)
     .filter!(x => isHorizontalReflection(input, x))
     .sum;
 
-int getScore(string[] input) => 
-    input.gethorizontalReflectionsScore * 100 +
-    input.map!(to!(char[])).array.transposed.map!(to!string).array.gethorizontalReflectionsScore;
+int getScore(string[] input, bool function(string[], int) isHorizontalReflection) => 
+    input.getHorizontalReflectionsScore(isHorizontalReflection) * 100 +
+    input.map!(to!(char[])).array.transposed.map!(to!string).array.getHorizontalReflectionsScore(isHorizontalReflection);
 
-int solveEasy(string[] input) => input.split("").map!getScore.sum;
+int solve(string[] input, bool function(string[], int) isHorizontalReflection)
+    =>
+    input.split("").map!(mp => getScore(mp, isHorizontalReflection)).sum;
 
-int solveHard(string[] input) {
-    return 0;
+int solveEasy(string[] input) => solve(input, (input, x) => isHorizontalReflectionEasy(input, x));
+
+bool isHorizontalReflectionHard(string[] input, int x) {
+    auto pairedRows = input[x..$].zip(input[0..x].retro).array;
+
+    int getDifferenceCount(string rw1, string rw2) => zip(rw1, rw2).count!(t => t[0] != t[1]);
+
+    auto differences = pairedRows.map!(t => getDifferenceCount(t[0], t[1])).sum;
+
+    return differences == 1;
 }
+
+int solveHard(string[] input) => input.solve((input, x) => isHorizontalReflectionHard(input, x));
