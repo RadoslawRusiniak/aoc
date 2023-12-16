@@ -13,27 +13,42 @@ import std.ascii, std.typecons;
 import std.datetime.date, std.datetime.systime;
 
 void main(string[] args) {
-    string[] input;
+    char[][] input;
     string line;
-    while ((line = readln.strip) !is null) { input ~= line; }
+    while ((line = readln.strip) !is null) { input ~= line.map!(to!char).array; }
 
-    auto res = solveEasy(input);
-    // auto res = solveHard(input);
+    debug { input.each!writeln; }
+
+    // auto res = solveEasy(input);
+    auto res = solveHard(input);
 
     res.writeln;
 }
 
-long solve(string[] input) {
+void moveUp(char[][] input) {
     int[] colMin = new int[] (input.length);
-    auto allLen = input.length;
-    long ans = 0;
     foreach (i, rw; input) {
         foreach (j, e; rw) {
             if (e == '#') { colMin[j] = i+1; }
             if (e == 'O') {
-                auto cur = allLen - colMin[j];
+                input[i][j] = '.';
+                input[colMin[j]][j] = 'O';
+            
                 ++colMin[j];
+            }
+        }
+    }
+}
 
+long getAns(char[][] input) {
+    debug { writeln; input.each!writeln; }
+
+    auto allLen = input.length;
+    auto ans = 0;
+    foreach (i, rw; input) {
+        foreach (e; rw) {
+            if (e == 'O') {
+                auto cur = allLen - i;
                 ans += cur;
             }
         }
@@ -42,8 +57,37 @@ long solve(string[] input) {
     return ans;
 }
 
-long solveEasy(string[] input) => input.solve;
+long solveEasy(char[][] input) {
+    moveUp(input);
+    
+    debug { writeln; input.each!writeln; }
 
-long solveHard(string[] input) {
-    return 0;
+    return getAns(input);
+}
+
+void rotateRight(ref char[][] input) { 
+    input = input.transposed.map!array.array.to!(char[][]);
+
+    input = input.map!reverse.array;
+}
+
+long solveHard(char[][] input) {
+    immutable long cycles = 1_000;//_000_000;
+    foreach (i; 0 .. cycles * 4) {
+        moveUp(input);
+        rotateRight(input);
+    }
+
+    return getAns(input);
+}
+
+unittest {
+    auto arr = [['a','b'], ['c','d']];
+    auto expected = [['c','a'], ['d','b']];
+    rotateRight(arr);
+
+    debug { arr.writeln; }
+    debug { expected.writeln; }
+    
+    assert(arr == [['c','a'], ['d','b']]);
 }
