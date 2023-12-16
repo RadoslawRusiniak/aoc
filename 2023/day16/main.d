@@ -17,8 +17,8 @@ void main(string[] args) {
     string line;
     while ((line = readln.strip) !is null) { input ~= line; }
 
-    auto res = solveEasy(input);
-    // auto res = solveHard(input);
+    // auto res = solveEasy(input);
+    auto res = solveHard(input);
 
     res.writeln;
 }
@@ -31,12 +31,12 @@ immutable Left = Dir(0, -1);
 immutable Up = Dir(-1, 0);
 immutable Down = Dir(1, 0);
 
-int solveEasy(string[] input) {
+int runSearch(string[] input, Pos startPos, immutable Dir startDir) {
     Dir[][Pos] vis; 
 
     bool inbounds(Pos p) => 0 <= p.x && p.x < input.length && 0 <= p.y && p.y < input[0].length;
 
-    Dir[] getNewDir(Dir d, char c) {
+    Dir[] getNewDir(immutable Dir d, char c) {
         switch (c)
         {
             case '.': 
@@ -76,9 +76,25 @@ int solveEasy(string[] input) {
         }
     }
 
-    go(Pos(0, 0), Dir(0, 1));
+    go(startPos, startDir);
 
     // debug { vis.byKeyValue.each!(v => writeln(v.key, ' ', v.value)); }
 
     return vis.keys.length;
+}
+
+int solveEasy(string[] input) => input.runSearch(Pos(0, 0), Right);
+
+int solveHard(string[] input) {
+    auto mx = 0;
+    foreach (x; 0 .. input.length) {
+        mx = max(mx, input.runSearch(Pos(x, 0), Right));
+        mx = max(mx, input.runSearch(Pos(x, input[0].length - 1), Left));
+    }
+    foreach (y; 0 .. input[0].length) {
+        mx = max(mx, input.runSearch(Pos(0, y), Down));
+        mx = max(mx, input.runSearch(Pos(input.length-1, y), Up));
+    }
+
+    return mx;
 }
