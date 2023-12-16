@@ -17,8 +17,8 @@ void main(string[] args) {
     string line;
     while ((line = readln.strip) !is null) { input ~= line; }
 
-    auto res = solveEasy(input);
-    // auto res = solveHard(input);
+    // auto res = solveEasy(input);
+    auto res = solveHard(input);
 
     res.writeln;
 }
@@ -58,4 +58,60 @@ int solve(Record[] records) => records.map!solve.sum;
 
 int solveEasy(string[] input) => input.parse.solve;
 
-int solveHard(string[] input) => 0;
+immutable int repeatTimes = 5;
+
+Record extend(Record record) 
+    => 
+    Record(record.line.repeat(repeatTimes).join('?'), record.arrangement.repeat(repeatTimes).join);
+
+Record[] parseHard(string[] input) => input.map!parse.map!extend.array;
+
+bool canBeOperational(char c) => c == '.' || c == '?';
+
+long solveHard(Tuple!(int, Record) t) {
+    auto index = t[0];
+    auto record = t[1];
+    debug { record.writeln; }
+
+    bool canBeEndOfLastBlock(int stringPos, int arrayPos) {
+        int required = record.arrangement[arrayPos-1];
+        return stringPos - required >= 0 &&
+            record.line[stringPos-required .. stringPos].all!(c => c == '#' || c == '?') &&
+            (stringPos - required == 0 || record.line[stringPos-required-1].canBeOperational);
+    }
+
+    long ways(int solutionIndex, int stringPos, int arrayPos) {
+        if (stringPos == -1 || stringPos == 0) {
+            return arrayPos == 0;
+        }
+
+        if (arrayPos == 0) {
+            return record.line[0 .. stringPos].all!(c => c != '#');
+        }
+
+        if (record.line[stringPos-1] == '.') {
+            return memoize!ways(solutionIndex, stringPos-1, arrayPos);
+        }
+
+        if (record.line[stringPos-1] == '#') {
+            if (canBeEndOfLastBlock(stringPos, arrayPos)) {
+                return memoize!ways(solutionIndex, stringPos - record.arrangement[arrayPos-1] - 1, arrayPos - 1);
+            }
+
+            return 0;
+        }
+
+        auto operationalBlock = memoize!ways(solutionIndex, stringPos-1, arrayPos);
+        auto damagedBlock = canBeEndOfLastBlock(stringPos, arrayPos) ?
+            memoize!ways(solutionIndex, stringPos - record.arrangement[arrayPos-1] - 1, arrayPos - 1) :
+            0;
+
+        return operationalBlock + damagedBlock;
+    }
+
+    return ways(index, record.line.length, record.arrangement.length);
+}
+
+long solveHard(Record[] records) => records.enumerate(1).map!solveHard.sum;
+
+long solveHard(string[] input) => input.parseHard.solveHard; 
