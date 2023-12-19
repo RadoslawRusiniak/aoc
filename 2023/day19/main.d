@@ -23,10 +23,11 @@ void main(string[] args) {
     res.writeln;
 }
 
-alias Rule = Tuple!(string, "elem", string, "op", int, "x", string, "res");
+alias Category = string;
+alias Rule = Tuple!(Category, "category", string, "op", int, "x", string, "res");
 alias Flow = Tuple!(string, "name", Rule[], "rules");
 alias System = Rule[][string];
-alias Part = int[char];
+alias Part = int[Category];
 alias State = Tuple!(System, "system", Part[], "parts");
 
 Rule parseRule(string input) {
@@ -54,14 +55,14 @@ Flow parseFlow(string input) {
 System parseSystem(string[] input) => input.map!parseFlow.assocArray;
 
 Part parsePart(string input) {
-    Tuple!(char, int) parseCategory(string input) {
+    Tuple!(Category, int) parseCategoryWithValue(string input) {
         auto s = input.split("=");
-        return tuple(s[0].to!char, s[1].to!int);
+        return tuple(s[0], s[1].to!int);
     }
 
     input = input[1 .. $-1];
 
-    return input.split(",").map!parseCategory.assocArray;
+    return input.split(",").map!parseCategoryWithValue.assocArray;
 }
 
 Part[] parseParts(string[] input) => input.map!parsePart.array;
@@ -78,9 +79,33 @@ int solveEasy(string[] input) {
 
     debug { 
         state.system.byKeyValue.each!(kv => writeln(kv.key, ' ', kv.value));
-        state.parts.each!writeln; }
+        state.parts.each!writeln;
+    }
 
-    return 0;
+    bool isAccepted(Part p) {
+        string runThroughFlow(Rule[] rules) {
+            foreach (rule; rules) {
+                if (rule.category.empty) { return rule.res; }
+
+                auto val = p[rule.category];
+                auto ok = rule.op == "<" ? val < rule.x : val > rule.x;
+                if (ok) { return rule.res; }
+            }
+
+            assert(false);
+        }
+        
+        string flow = "in";
+        while (true) {
+            flow = runThroughFlow(state.system[flow]);
+            if (flow == "A") { return true; }
+            if (flow == "R") { return false; }
+        }
+    }
+
+    int toValue(Part p) => p.values.sum;
+
+    return state.parts.filter!isAccepted.map!toValue.sum;
 }
 
 unittest {
