@@ -17,8 +17,8 @@ void main(string[] args) {
     string line;
     while ((line = readln.strip) !is null) { input ~= line; }
 
-    auto res = solveEasy(input);
-    // auto res = solveHard(input);
+    // auto res = solveEasy(input);
+    auto res = solveHard(input);
 
     res.writeln;
 }
@@ -75,7 +75,7 @@ State parseInput(string[] input) {
 }
 
 int solveEasy(string[] input) {
-    auto state = parseInput(input);
+    auto state = input.parseInput;
 
     debug { 
         state.system.byKeyValue.each!(kv => writeln(kv.key, ' ', kv.value));
@@ -106,6 +106,13 @@ int solveEasy(string[] input) {
     int toValue(Part p) => p.values.sum;
 
     return state.parts.filter!isAccepted.map!toValue.sum;
+}
+
+int solveHard(string[] input) {
+    auto state = input.parseInput;
+    auto flows = state.system;
+    
+    return 0;
 }
 
 unittest {
