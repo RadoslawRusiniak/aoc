@@ -5,5 +5,5 @@
 *.in
 *.lock
 *.swp
-**/Main$
+**/**/Main$
 **/.stack-work
