@@ -2,15 +2,9 @@ import System.IO
 import System.Environment (getArgs)
 import Control.Monad
 import Data.List as L
-import Data.List.Extra (splitOn)
 import Data.Char
 import Data.Foldable
 import Data.Maybe
-import qualified Data.Map as Map
-import qualified Data.Sequence as Seq
-import qualified Data.Set as Set
-import Text.Regex.Applicative (RE, string, sym, (<|>))
-import Text.Regex.Applicative.Common (decimal)
 
 main = do
     file <- getFileContents
@@ -19,36 +13,56 @@ main = do
     where getFileContents = readFile. head =<< getArgs
 
 type Input = Disk
-type Disk = [Maybe FileId]
-type FileId = Int
-type Files = [Int]
-type ContinuousDisk = [FilledDiskPos]
-type FilledDiskPos = FileId
+type Disk = [Block]
+data Block = Block {
+    idx :: Maybe Index
+    , len :: Length
+    } deriving (Show, Eq)
+type Index = Int
+type Length = Int
 
 solveEasy = getResultEasy. parseEasy
 solveHard = getResultHard. parseHard
 
 parseEasy :: String -> Input
-parseEasy = concatMap (uncurry toSpace). zip [0..]. map digitToInt. trimEnd
+parseEasy = toDisk. map digitToInt. takeWhile isDigit
+
+toDisk :: [Int] -> [Block]
+toDisk = map (uncurry Block). zip indexation
     where
-    trimEnd = reverse. (dropWhile (not. isDigit)). reverse 
-    toSpace blockId n = replicate n (getPosType blockId)
-    getPosType blockId = if even blockId then Just (blockId `div` 2) else Nothing
+    indexation = intersperse Nothing. map Just $ [0..]
 
 getResultEasy :: Input -> Int
-getResultEasy disk = getScore. segmentDisk need files $ disk
+getResultEasy = getScore. refragmentDisk
+
+refragmentDisk :: Disk -> Disk
+refragmentDisk disk = foldr refragmentFile disk (files disk)
     where
-    files = getFilesFromEnd disk
-    need = requiredSpace files
+    refragmentFile file = 
+        concat. snd. mapAccumL greedyInsert (Just file). removeFile file
+    removeFile f@(Block _ l) (x:xs)
+        | f == x    = (Block Nothing l) : xs
+        | otherwise = x : removeFile f xs
 
-segmentDisk :: Int -> Files -> Disk -> ContinuousDisk
-segmentDisk need [] _ = []
-segmentDisk 0 _ _ = []
-segmentDisk need fs (Just fileId:rest) = fileId : segmentDisk (need-1) fs rest
-segmentDisk need (f:fs) (Nothing:rest) = f : segmentDisk (need-1) fs rest
-
-getScore :: ContinuousDisk -> Int
-getScore = sum. zipWith (*) [0..]
+type BlockToInsert = Maybe Block
+type ComparedBlock = Block
+type LeftToInsert = Maybe Block
+type ResultingBlocks = [Block]
+greedyInsert :: BlockToInsert -> ComparedBlock -> (LeftToInsert, ResultingBlocks)
+greedyInsert Nothing b = (Nothing, [b])
+greedyInsert toInsert b@(Block (Just _) _) = (toInsert, [b])
+greedyInsert (Just (Block (Just idx) need)) (Block _ space) =
+    (toInsertBlock, insertedBlock : leftover)
+        where
+        insertedLen = min space need
+        leftSpace = space - insertedLen
+        toInsertBlock = if insertedLen < need
+            then Just (Block (Just idx) (need - insertedLen))
+            else Nothing
+        insertedBlock = Block (Just idx) insertedLen 
+        leftover = if leftSpace > 0
+            then [Block Nothing leftSpace]
+            else []
 
 parseHard :: String -> Input
 parseHard = parseEasy
@@ -56,8 +70,13 @@ parseHard = parseEasy
 getResultHard :: Input -> Int
 getResultHard = const 0
 
-getFilesFromEnd :: Disk -> Files
-getFilesFromEnd = reverse. map (fromMaybe (error "?")). filter isJust
+getScore :: Disk -> Int
+getScore = fst. foldl go (0, 0)
+    where
+    go (score, pos) (Block idx len) = (score + calculateForBlock, nextPos)
+        where 
+        nextPos = pos + len
+        calculateForBlock = (fromMaybe 0 idx) * sum [pos .. nextPos - 1] 
 
-requiredSpace :: Files -> Int
-requiredSpace = length
+files :: Disk -> [Block]
+files = filter (isJust. idx)
