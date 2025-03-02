@@ -5,8 +5,8 @@ import Data.Maybe
 
 main = do
     file <- getFileContents
-    print . solveEasy $ file
-    print . solveHard $ file
+    print. solveEasy $ file
+    print. solveHard $ file
     where getFileContents = readFile. head =<< getArgs
 
 type Input = Disk
@@ -70,18 +70,14 @@ greedyInsert idx need space = (toInsertBlock, insertedBlock : leftover)
         then Just (Block (Just idx) (need - insertedLen))
         else Nothing
     insertedBlock = Block (Just idx) insertedLen 
-    leftover = if leftSpace > 0
-        then [Block Nothing leftSpace]
-        else []
+    leftover = [Block Nothing leftSpace | leftSpace > 0]
 
 wholeInsert :: InsertAlgo
 wholeInsert idx need space
     | need > space = (Just (Block (Just idx) need), [Block Nothing space])
     | otherwise = (Nothing, (Block (Just idx) need) : leftover)
         where
-        leftover = if need < space
-            then [Block Nothing (space - need)]
-            else []
+        leftover = [Block Nothing (space - need) | need < space]
 
 getScore :: Disk -> Int
 getScore = fst. foldl' go (0, 0)
