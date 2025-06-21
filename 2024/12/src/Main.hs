@@ -1,23 +1,18 @@
-import Control.Monad
 import Control.Monad.Loops (unfoldM)
 import Control.Monad.State
 import Data.Array
 import Data.Char
-import Data.Foldable
-import Data.List as List
-import Data.List.Extra (splitOn)
-import Data.List.NonEmpty (unfold)
+import Data.List qualified as List
 import Data.Array qualified as Array
 import Data.Map qualified as Map
-import Data.Maybe
 import Data.Sequence qualified as Seq
 import Data.Sequence (Seq)
 import Data.Set qualified as Set
 import Data.Set (Set)
 import Linear.V2 (V2(..))
 import System.Environment (getArgs)
-import System.IO
 
+main :: IO ()
 main = do
   file <- getFileContents
   print . solveEasy $ file
@@ -25,21 +20,23 @@ main = do
   where
     getFileContents = readFile . head =<< getArgs
 
+type Input = String
 type Point = V2 Int
+type Dir = V2 Int
 type Parsed = Array Point Char
 
+solveEasy, solveHard :: Input -> Int
 solveEasy = getResultEasy . parseEasy
-
 solveHard = getResultHard . parseHard
 
 parseEasy :: String -> Parsed
-parseEasy input = Array.listArray bounds chars
+parseEasy input = Array.listArray arrBounds chars
     where
         chars = filter isAlpha input
         rows = lines input
         height = length rows
         width = length $ head rows
-        bounds = (V2 1 1, V2 height width)
+        arrBounds = (V2 1 1, V2 height width)
 
 getResultEasy :: Parsed -> Int
 getResultEasy = sum . map scoreEasy . groupRegions
@@ -51,18 +48,20 @@ getResultHard :: Parsed -> Int
 getResultHard = sum . map scoreHard . groupRegions
 
 scoreEasy :: Set Point -> Int
-scoreEasy region = Set.size region * componentPerimeter region
-  where
-    componentPerimeter region =
-      length [ () | p <- Set.toList region, n <- neighbours p, n `Set.notMember` region ]
+scoreEasy = getScore (\r d -> Set.size $ neighboursInDirection r d)
 
 scoreHard :: Set Point -> Int
-scoreHard region = Set.size region * componentSides
+scoreHard = getScore sidesInDirection
   where
-    componentSides :: Int
-    componentSides = sum $ map (length . connectedComponents . Set.fromList . neighboursInDirection) directions
-    neighboursInDirection :: V2 Int -> [Point]
-    neighboursInDirection d = filter (`Set.notMember` region) . map (+d) $ Set.toList region
+    sidesInDirection r = length . connectedComponents . neighboursInDirection r
+
+type ScoreF = Set Point -> Dir -> Int
+
+getScore :: ScoreF -> Set Point -> Int
+getScore f region = Set.size region * sum [ f region dir | dir <- directions ]
+
+neighboursInDirection :: Set Point -> Dir -> Set Point
+neighboursInDirection r d = Set.map (+d) r Set.\\ r
 
 groupRegions :: Array Point Char -> [Set Point]
 groupRegions arr = concatMap connectedComponents groupedSets
@@ -71,7 +70,7 @@ groupRegions arr = concatMap connectedComponents groupedSets
     groupedSets = Map.elems $ Map.fromListWith Set.union pointGroups
 
 connectedComponents :: Set Point -> [Set Point]
-connectedComponents = unfoldr findConnectedComponent
+connectedComponents = List.unfoldr findConnectedComponent
 
 findConnectedComponent :: Set Point -> Maybe (Set Point, Set Point)
 findConnectedComponent searchSpace
@@ -90,22 +89,22 @@ bfs :: Set Point -> Point -> Set Point
 bfs searchSpace start = Set.fromList $ evalState (unfoldM step) initState
   where
     initState = (Seq.singleton start, Set.singleton start)
-    step :: State BfsState (Maybe Point)
+    step :: BfsM (Maybe Point)
     step = do
       (queue, visited) <- get
       case Seq.viewl queue of
         Seq.EmptyL -> return Nothing
         current Seq.:< rest -> do
-          let neighbours = getNeighbours searchSpace current
+          let neighbours = getNeighbours current
               unvisited = filter (`Set.notMember` visited) neighbours
               newQueue = rest Seq.>< Seq.fromList unvisited
               newVisited = foldr Set.insert visited unvisited
           put (newQueue, newVisited)
           return (Just current)
-    getNeighbours all = filter (`Set.member` all) . neighbours
+    getNeighbours = filter (`Set.member` searchSpace) . adjacent
 
-neighbours :: Point -> [Point]
-neighbours p = [p + d | d <- directions]
+adjacent :: Point -> [Point]
+adjacent p = [p + d | d <- directions]
 
-directions :: [Point]
+directions :: [Dir]
 directions = [V2 1 0, V2 (-1) 0, V2 0 1, V2 0 (-1)]
