@@ -1,14 +1,20 @@
 import System.IO  
 import System.Environment (getArgs)
 import Control.Monad
+import Control.Monad.State
 import Data.Array
-import Data.List as L
+import Data.List as List
 import Data.List.Extra (splitOn)
 import Data.Char
 import Data.Foldable
 import Data.Maybe
-import qualified Data.Map as M
-import qualified Data.Set as S
+import qualified Data.Map as Map
+import Data.Map (Map)
+import qualified Data.Set as Set
+import Data.Set (Set)
+import qualified Data.Sequence as Seq
+import Data.Sequence (Seq)
+import Linear.V2 (V2(..))
 import Text.Regex.Applicative (RE, string, sym, (<|>))
 import Text.Regex.Applicative.Common (decimal)
 
@@ -19,18 +25,19 @@ main = do
     where getFileContents = readFile. head =<< getArgs
 
 type Input = String
+type Parsed = String
 
 solveEasy = getResultEasy. parseEasy
 solveHard = getResultHard. parseHard
 
-parseEasy :: String -> Input
+parseEasy :: Input -> Parsed
 parseEasy = id
 
-getResultEasy :: Input -> Int
+getResultEasy :: Parsed -> Int
 getResultEasy = const 0
 
-parseHard :: String -> Input
+parseHard :: Input -> Parsed
 parseHard = parseEasy
 
-getResultHard :: Input -> Int
+getResultHard :: Parsed -> Int
 getResultHard = const 0
