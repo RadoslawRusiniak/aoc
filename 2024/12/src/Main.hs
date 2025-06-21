@@ -42,28 +42,36 @@ parseEasy input = Array.listArray bounds chars
         bounds = (V2 1 1, V2 height width)
 
 getResultEasy :: Parsed -> Int
-getResultEasy = sum . map score . groupRegions
+getResultEasy = sum . map scoreEasy . groupRegions
 
 parseHard :: String -> Parsed
 parseHard = parseEasy
 
 getResultHard :: Parsed -> Int
-getResultHard = const 0
+getResultHard = sum . map scoreHard . groupRegions
 
-score :: Set Point -> Int
-score region = Set.size region * componentPerimeter region
+scoreEasy :: Set Point -> Int
+scoreEasy region = Set.size region * componentPerimeter region
   where
     componentPerimeter region =
       length [ () | p <- Set.toList region, n <- neighbours p, n `Set.notMember` region ]
 
+scoreHard :: Set Point -> Int
+scoreHard region = Set.size region * componentSides
+  where
+    componentSides :: Int
+    componentSides = sum $ map (length . connectedComponents . Set.fromList . neighboursInDirection) directions
+    neighboursInDirection :: V2 Int -> [Point]
+    neighboursInDirection d = filter (`Set.notMember` region) . map (+d) $ Set.toList region
+
 groupRegions :: Array Point Char -> [Set Point]
-groupRegions arr = concatMap bfsComponents groupedSets
+groupRegions arr = concatMap connectedComponents groupedSets
   where
     pointGroups = [(c, Set.singleton p) | (p, c) <- Array.assocs arr]
     groupedSets = Map.elems $ Map.fromListWith Set.union pointGroups
 
-bfsComponents :: Set Point -> [Set Point]
-bfsComponents = unfoldr findConnectedComponent
+connectedComponents :: Set Point -> [Set Point]
+connectedComponents = unfoldr findConnectedComponent
 
 findConnectedComponent :: Set Point -> Maybe (Set Point, Set Point)
 findConnectedComponent searchSpace
@@ -98,5 +106,6 @@ bfs searchSpace start = Set.fromList $ evalState (unfoldM step) initState
 
 neighbours :: Point -> [Point]
 neighbours p = [p + d | d <- directions]
-    where
-        directions = [V2 1 0, V2 (-1) 0, V2 0 1, V2 0 (-1)]
+
+directions :: [Point]
+directions = [V2 1 0, V2 (-1) 0, V2 0 1, V2 0 (-1)]
