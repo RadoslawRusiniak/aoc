@@ -14,6 +14,7 @@ import Text.Regex.Applicative (RE, string, sym, (<|>))
 import Text.Regex.Applicative.Common (decimal)
 import System.Console.Terminfo (Point)
 import Text.XHtml (start)
+import Data.List.NonEmpty (unfold)
 
 main = do
     file <- getFileContents
@@ -38,6 +39,22 @@ parseHard = parseEasy
 getResultHard :: Input -> Int
 getResultHard = const 0
 
+groupRegions :: Array Point Char -> [Set Point]
+groupRegions arr = concatMap bfsComponents groupedSets
+  where
+    pointGroups = [ (c, Set.singleton p) | (p, c) <- Array.assocs arr ]
+    groupedSets = Map.elems $ Map.fromListWith Set.union pointGroups
+
+bfsComponents :: Set Point -> [Set Point]
+bfsComponents = unfoldr findConnectedComponent
+
+findConnectedComponent :: Set Point -> (Set Point, Set Point)
+findConnectedComponent searchSpace =
+    let start     = Set.findMin searchSpace
+        component = bfs searchSpace start
+        remaining = searchSpace Set.\\ component
+    in (component, remaining)
+
 type Queue = Seq Point
 type Visited = Set Point
 type BfsState = (Queue, Visited)
@@ -58,3 +75,4 @@ bfs searchSpace start = Set.fromList $ evalState (unfoldrM step) initState
                         newVisited = foldr Set.insert visited unvisited
                     put (newQueue, newVisited)
                     return (Just current)
+        getNeighbours = _
