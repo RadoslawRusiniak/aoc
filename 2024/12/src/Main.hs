@@ -41,18 +41,20 @@ getResultHard = const 0
 type Queue = Seq Point
 type Visited = Set Point
 type BfsState = (Queue, Visited)
+type BfsM a = State BfsState a
 bfs :: Set Point -> Point -> Set Point
-bfs searchSpace start = Set.fromList $ unfoldr step (queue, visited)
+bfs searchSpace start = Set.fromList $ evalState (unfoldrM step) initState
     where
-        queue = Seq.singleton start
-        visited = Set.singleton start
-        step :: BfsState -> Maybe (Point, BfsState)
-        step queue visited =
+        initState = (Seq.singleton start, Set.singleton start)
+        step :: State BfsState (Maybe Point)
+        step = do
+            (queue, visited) <- get
             case Seq.viewl queue of
-                Seq.EmptyL -> Nothing
-                current Seq.:< rest ->
-                    let neighbours = getNeighbours current
-                        unvisited = filter (not. (`Set.member` visited)) neighbours
+                Seq.EmptyL -> return Nothing
+                current Seq.:< rest -> do
+                    let neighbours = getNeighbours searchSpace current
+                        unvisited = filter (`Set.notMember` visited) neighbours
                         newQueue = rest Seq.>< Seq.fromList unvisited
-                        newVisited = Set.union visited (Set.fromList unvisited)
-                    in Just (current, (newQueue, newVisited))
+                        newVisited = foldr Set.insert visited unvisited
+                    put (newQueue, newVisited)
+                    return (Just current)
