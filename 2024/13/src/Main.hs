@@ -1,0 +1,97 @@
+import System.IO  
+import System.Environment (getArgs)
+import Control.Monad
+import Data.Array
+import Data.List as List
+import Data.List.Extra (splitOn)
+import Data.Char
+import Data.Foldable
+import Data.Maybe
+import qualified Data.Map as Map
+import Data.Map (Map)
+import qualified Data.Set as Set
+import Data.Set (Set)
+import qualified Data.Sequence as Seq
+import Data.Sequence (Seq)
+import Linear ((*^))
+import Linear.V2 (V2(..))
+import Text.Regex.Applicative (RE, string, sym, (<|>))
+import Text.Regex.Applicative.Common (decimal)
+
+main = do
+    file <- getFileContents
+    print . solveEasy $ file
+    print . solveHard $ file
+    where getFileContents = readFile. head =<< getArgs
+
+type Input = String
+type Parsed = [Machine]
+
+solveEasy = getResultEasy. parseEasy
+solveHard = getResultHard. parseHard
+
+parseEasy :: Input -> Parsed
+parseEasy = parseMachines
+
+getResultEasy :: Parsed -> Int
+getResultEasy = machinesScore
+
+parseHard :: Input -> Parsed
+parseHard = parseEasy
+
+getResultHard :: Parsed -> Int
+getResultHard = const 0
+
+parseMachines :: Input -> Parsed
+parseMachines = map parseMachine . splitOn [""] . lines
+
+parseMachine :: [String] -> Machine
+parseMachine [line1, line2, line3] = (parseGoal line3, parseButton line1, parseButton line2)
+
+parseGoal :: String -> Goal
+parseGoal = (\[_, x, y] -> V2 (toVal x) (toVal y)) . words
+
+parseButton :: String -> Goal
+parseButton = (\[_, _, x, y] -> V2 (toVal x) (toVal y)) . words 
+
+toVal :: String -> Int
+toVal = read . filter isDigit
+
+type Button = V2 Int
+type ButtonA = Button
+type ButtonB = Button
+type Goal = V2 Int
+type Cost = Int
+type ClawTry = (Int, Button)
+type TwoClawTry = [ClawTry]
+type Machine = (Goal, ButtonA, ButtonB)
+
+machinesScore :: [Machine] -> Int
+machinesScore = sum . map machineScore
+
+machineScore :: Machine -> Int
+machineScore = minScore . allValid
+
+minScore :: [TwoClawTry] -> Int
+minScore = minimumDef 0 . map toScore
+
+toScore :: TwoClawTry -> Int
+toScore [(t1, _), (t2, _)] = t1 * 3 + t2
+
+allValid :: Machine -> [TwoClawTry]
+allValid (g, bA, bB) = filter (canReach g) $ allConfigsForTwo bA bB
+
+allConfigsForTwo :: Button -> Button -> [TwoClawTry]
+allConfigsForTwo bA bB = [[c1, c2] | c1 <- allConfigsForOne bA, c2 <- allConfigsForOne bB]
+
+allConfigsForOne :: Button -> [ClawTry]
+allConfigsForOne b = [(c, b) | c <- [0 .. 100]]
+
+canReach :: Goal -> TwoClawTry -> Bool
+canReach g configs = g == sum (map clawReach configs)
+  where
+    clawReach (t, s) = t *^ s
+
+minimumDef :: Ord a => a -> [a] -> a
+minimumDef def [] = def
+minimumDef _   xs = minimum xs
