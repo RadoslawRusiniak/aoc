@@ -61,9 +61,8 @@ type Button = V2 Int
 type ButtonA = Button
 type ButtonB = Button
 type Goal = V2 Int
-type Cost = Int
 type ClawTry = (Int, Button)
-type TwoClawTry = [ClawTry]
+type TwoClawTry = (ClawTry, ClawTry)
 type Machine = (Goal, ButtonA, ButtonB)
 
 machinesScore :: [Machine] -> Int
@@ -76,19 +75,19 @@ minScore :: [TwoClawTry] -> Int
 minScore = minimumDef 0 . map toScore
 
 toScore :: TwoClawTry -> Int
-toScore [(t1, _), (t2, _)] = t1 * 3 + t2
+toScore ((t1, _), (t2, _)) = t1 * 3 + t2
 
 allValid :: Machine -> [TwoClawTry]
 allValid (g, bA, bB) = filter (canReach g) $ allConfigsForTwo bA bB
 
 allConfigsForTwo :: Button -> Button -> [TwoClawTry]
-allConfigsForTwo bA bB = [[c1, c2] | c1 <- allConfigsForOne bA, c2 <- allConfigsForOne bB]
+allConfigsForTwo bA bB = [(c1, c2) | c1 <- allConfigsForOne bA, c2 <- allConfigsForOne bB]
 
 allConfigsForOne :: Button -> [ClawTry]
 allConfigsForOne b = [(c, b) | c <- [0 .. 100]]
 
 canReach :: Goal -> TwoClawTry -> Bool
-canReach g configs = g == sum (map clawReach configs)
+canReach g (c1, c2) = g == clawReach c1 + clawReach c2
   where
     clawReach (t, s) = t *^ s
 
