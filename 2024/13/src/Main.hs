@@ -18,6 +18,7 @@ import Linear.V2 (V2(..))
 import Text.Regex.Applicative (RE, string, sym, (<|>))
 import Text.Regex.Applicative.Common (decimal)
 
+main :: IO ()
 main = do
     file <- getFileContents
     print . solveEasy $ file
@@ -27,6 +28,7 @@ main = do
 type Input = String
 type Parsed = [Machine]
 
+solveEasy, solveHard :: Input -> Int
 solveEasy = getResultEasy. parseEasy
 solveHard = getResultHard. parseHard
 
