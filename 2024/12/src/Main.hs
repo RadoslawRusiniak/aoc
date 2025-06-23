@@ -48,12 +48,12 @@ getResultHard :: Parsed -> Int
 getResultHard = sum . map scoreHard . groupRegions
 
 scoreEasy :: Set Point -> Int
-scoreEasy = getScore (\r d -> Set.size $ neighboursInDirection r d)
+scoreEasy = getScore (\region dir -> Set.size $ neighboursInDirection region dir)
 
 scoreHard :: Set Point -> Int
 scoreHard = getScore sidesInDirection
   where
-    sidesInDirection r = length . connectedComponents . neighboursInDirection r
+    sidesInDirection region = length . connectedComponents . neighboursInDirection region
 
 type ScoreF = Set Point -> Dir -> Int
 
@@ -79,17 +79,16 @@ findConnectedComponent searchSpace
     let start = Set.findMin searchSpace
         component = bfs searchSpace start
         remaining = searchSpace Set.\\ component
-        in Just (component, remaining)
+    in Just (component, remaining)
 
 type Queue = Seq Point
 type Visited = Set Point
 type BfsState = (Queue, Visited)
-type BfsM a = State BfsState a
 bfs :: Set Point -> Point -> Set Point
 bfs searchSpace start = Set.fromList $ evalState (unfoldM step) initState
   where
     initState = (Seq.singleton start, Set.singleton start)
-    step :: BfsM (Maybe Point)
+    step :: State BfsState (Maybe Point)
     step = do
       (queue, visited) <- get
       case Seq.viewl queue of
