@@ -15,6 +15,7 @@ import qualified Data.Sequence as Seq
 import Data.Sequence (Seq)
 import Linear ((*^))
 import Linear.V2 (V2(..))
+import Linear.Matrix (M22(..), (!*))
 import Text.Regex.Applicative (RE, string, sym, (<|>))
 import Text.Regex.Applicative.Common (decimal)
 
@@ -42,7 +43,21 @@ parseHard :: Input -> Parsed
 parseHard = parseEasy
 
 getResultHard :: Parsed -> Int
-getResultHard = const 0
+getResultHard = sum . mapMaybe (getScoreHard . toHard)
+  where
+    toHard (g, bA, bB) = ((+10000000000000) <$> g, bA, bB)
+
+getScoreHard :: Machine -> Maybe Int
+getScoreHard (g, V2 x1 y1, V2 x2 y2) = do
+  let (det, u) = inv22det (V2 (V2 x1 x2) (V2 y1 y2))
+  guard $ det /= 0
+  let ug = u !* g
+  guard $ all ((== 0) . (`mod` det)) ug
+  let V2 a b = (`div` det) <$> ug
+  return $ 3 * a + b
+
+inv22det :: M22 Int -> (Int, M22 Int)
+inv22det (V2 (V2 a b) (V2 c d)) = (a*d - b*c, V2 (V2 d (-b)) (V2 (-c) a))
 
 parseMachines :: Input -> Parsed
 parseMachines = map parseMachine . splitOn [""] . lines
