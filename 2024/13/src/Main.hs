@@ -13,7 +13,6 @@ import qualified Data.Set as Set
 import Data.Set (Set)
 import qualified Data.Sequence as Seq
 import Data.Sequence (Seq)
-import Linear ((*^))
 import Linear.V2 (V2(..))
 import Linear.Matrix (M22(..), (!*))
 import Text.Regex.Applicative (RE, string, sym, (<|>))
@@ -28,6 +27,11 @@ main = do
 
 type Input = String
 type Parsed = [Machine]
+type Machine = (Goal, ButtonA, ButtonB)
+type Goal = V2 Int
+type ButtonA = Button
+type ButtonB = Button
+type Button = V2 Int
 
 solveEasy, solveHard :: Input -> Int
 solveEasy = getResultEasy. parseEasy
@@ -37,18 +41,18 @@ parseEasy :: Input -> Parsed
 parseEasy = parseMachines
 
 getResultEasy :: Parsed -> Int
-getResultEasy = machinesScore
+getResultEasy = sum . mapMaybe getMachineScore
 
 parseHard :: Input -> Parsed
 parseHard = parseEasy
 
 getResultHard :: Parsed -> Int
-getResultHard = sum . mapMaybe (getScoreHard . toHard)
+getResultHard = getResultEasy . map toHard
   where
     toHard (g, bA, bB) = ((+10000000000000) <$> g, bA, bB)
 
-getScoreHard :: Machine -> Maybe Int
-getScoreHard (g, V2 x1 y1, V2 x2 y2) = do
+getMachineScore :: Machine -> Maybe Int
+getMachineScore (g, V2 x1 y1, V2 x2 y2) = do
   let (det, u) = inv22det (V2 (V2 x1 x2) (V2 y1 y2))
   guard $ det /= 0
   let ug = u !* g
@@ -73,41 +77,3 @@ parseButton = (\[_, _, x, y] -> V2 (toVal x) (toVal y)) . words
 
 toVal :: String -> Int
 toVal = read . filter isDigit
-
-type Button = V2 Int
-type ButtonA = Button
-type ButtonB = Button
-type Goal = V2 Int
-type ClawTry = (Int, Button)
-type TwoClawTry = (ClawTry, ClawTry)
-type Machine = (Goal, ButtonA, ButtonB)
-
-machinesScore :: [Machine] -> Int
-machinesScore = sum . map machineScore
-
-machineScore :: Machine -> Int
-machineScore = minScore . allValid
-
-minScore :: [TwoClawTry] -> Int
-minScore = minimumDef 0 . map toScore
-
-toScore :: TwoClawTry -> Int
-toScore ((t1, _), (t2, _)) = t1 * 3 + t2
-
-allValid :: Machine -> [TwoClawTry]
-allValid (g, bA, bB) = filter (canReach g) $ allConfigsForTwo bA bB
-
-allConfigsForTwo :: Button -> Button -> [TwoClawTry]
-allConfigsForTwo bA bB = [(c1, c2) | c1 <- allConfigsForOne bA, c2 <- allConfigsForOne bB]
-
-allConfigsForOne :: Button -> [ClawTry]
-allConfigsForOne b = [(c, b) | c <- [0 .. 100]]
-
-canReach :: Goal -> TwoClawTry -> Bool
-canReach g (c1, c2) = g == clawReach c1 + clawReach c2
-  where
-    clawReach (t, s) = t *^ s
-
-minimumDef :: Ord a => a -> [a] -> a
-minimumDef def [] = def
-minimumDef _   xs = minimum xs
