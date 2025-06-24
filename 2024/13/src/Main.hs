@@ -14,7 +14,7 @@ import Data.Set (Set)
 import qualified Data.Sequence as Seq
 import Data.Sequence (Seq)
 import Linear.V2 (V2(..))
-import Linear.Matrix (M22(..), (!*))
+import Linear.Matrix (M22, det22, (!*))
 import Text.Regex.Applicative (RE, string, sym, (<|>))
 import Text.Regex.Applicative.Common (decimal)
 
@@ -53,15 +53,17 @@ getResultHard = getResultEasy . map toHard
 
 getMachineScore :: Machine -> Maybe Int
 getMachineScore (g, V2 x1 y1, V2 x2 y2) = do
-  let (det, u) = inv22det (V2 (V2 x1 x2) (V2 y1 y2))
-  guard $ det /= 0
+  let m = V2 (V2 x1 x2) (V2 y1 y2)
+  let determinant = det22 m
+  guard $ determinant /= 0
+  let u = inverse22 m
   let ug = u !* g
-  guard $ all ((== 0) . (`mod` det)) ug
-  let V2 a b = (`div` det) <$> ug
+  guard $ all ((== 0) . (`mod` determinant)) ug
+  let V2 a b = (`div` determinant) <$> ug
   return $ 3 * a + b
 
-inv22det :: M22 Int -> (Int, M22 Int)
-inv22det (V2 (V2 a b) (V2 c d)) = (a*d - b*c, V2 (V2 d (-b)) (V2 (-c) a))
+inverse22 :: M22 Int -> M22 Int
+inverse22 (V2 (V2 a b) (V2 c d)) = V2 (V2 d (-b)) (V2 (-c) a)
 
 parseMachines :: Input -> Parsed
 parseMachines = map parseMachine . splitOn [""] . lines
