@@ -21,25 +21,22 @@ import Text.Regex.Applicative.Common (decimal)
 main :: IO ()
 main = do
     file <- getFileContents
-    print . solveEasy $ file
-    print . solveHard $ file
-    where getFileContents = readFile. head =<< getArgs
+    print . part1 $ file
+    print . part2 $ file
+    where getFileContents = readFile . head =<< getArgs
 
 type Input = String
 type Parsed = String
 
-solveEasy, solveHard :: Input -> Int
-solveEasy = getResultEasy. parseEasy
-solveHard = getResultHard. parseHard
+part1, part2 :: Input -> Int
+part1 = getResultPart1 . parse
+part2 = getResultPart2 . parse
 
-parseEasy :: Input -> Parsed
-parseEasy = id
+parse :: Input -> Parsed
+parse = id
 
-getResultEasy :: Parsed -> Int
-getResultEasy = const 0
+getResultPart1 :: Parsed -> Int
+getResultPart1 = const 0
 
-parseHard :: Input -> Parsed
-parseHard = parseEasy
-
-getResultHard :: Parsed -> Int
-getResultHard = const 0
+getResultPart2 :: Parsed -> Int
+getResultPart2 = const 0
