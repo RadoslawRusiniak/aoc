@@ -20,10 +20,9 @@ import Text.Regex.Applicative.Common (decimal)
 
 main :: IO ()
 main = do
-  file <- getFileContents
+  file <- readFile . head =<< getArgs
   print . part1 $ file
   print . part2 $ file
-  where getFileContents = readFile . head =<< getArgs
 
 type Input = String
 type Parsed = [Robot]
