@@ -25,6 +25,7 @@ executable day01
                      , containers
                      , extra
                      , linear
+                     , monad-loops
                      , parsec
                      , regex-applicative
                      , recursion-schemes

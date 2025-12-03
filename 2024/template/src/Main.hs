@@ -1,36 +1,41 @@
 import System.IO  
 import System.Environment (getArgs)
 import Control.Monad
+import Control.Monad.State
 import Data.Array
-import Data.List as L
+import Data.List as List
 import Data.List.Extra (splitOn)
 import Data.Char
 import Data.Foldable
 import Data.Maybe
-import qualified Data.Map as M
-import qualified Data.Set as S
+import qualified Data.Map as Map
+import Data.Map (Map)
+import qualified Data.Set as Set
+import Data.Set (Set)
+import qualified Data.Sequence as Seq
+import Data.Sequence (Seq)
+import Linear.V2 (V2(..))
 import Text.Regex.Applicative (RE, string, sym, (<|>))
 import Text.Regex.Applicative.Common (decimal)
 
+main :: IO ()
 main = do
-    file <- getFileContents
-    print . solveEasy $ file
-    print . solveHard $ file
-    where getFileContents = readFile. head =<< getArgs
+  file <- readFile . head =<< getArgs
+  print . part1 $ file
+  print . part2 $ file
 
 type Input = String
+type Parsed = String
 
-solveEasy = getResultEasy. parseEasy
-solveHard = getResultHard. parseHard
+part1, part2 :: Input -> Int
+part1 = getResultPart1 . parse
+part2 = getResultPart2 . parse
 
-parseEasy :: String -> Input
-parseEasy = id
+parse :: Input -> Parsed
+parse = id
 
-getResultEasy :: Input -> Int
-getResultEasy = const 0
+getResultPart1 :: Parsed -> Int
+getResultPart1 = const 0
 
-parseHard :: String -> Input
-parseHard = parseEasy
-
-getResultHard :: Input -> Int
-getResultHard = const 0
+getResultPart2 :: Parsed -> Int
+getResultPart2 = const 0
