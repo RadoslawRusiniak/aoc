@@ -41,10 +41,10 @@ getResultHard = getScore. refragmentDisk wholeInsert
 refragmentDisk :: InsertAlgo -> Disk -> Disk
 refragmentDisk algo disk = foldr refragmentFile disk (files disk)
     where
-    refragmentFile file = 
+    refragmentFile file =
         concat. snd. mapAccumL (insertFile algo) (Just file). removeFile file
     removeFile f@(Block _ l) (x:xs)
-        | f == x    = (Block Nothing l) : xs
+        | f == x    = Block Nothing l : xs
         | otherwise = x : removeFile f xs
 
 type LeftToInsert = Maybe Block
@@ -56,7 +56,7 @@ type ComparedBlock = Block
 insertFile :: InsertAlgo -> BlockToInsert -> ComparedBlock -> Result
 insertFile _ Nothing b = (Nothing, [b])
 insertFile _ toInsert b@(Block (Just _) _) = (toInsert, [b])
-insertFile algo (Just (Block (Just idx) need)) (Block _ space) = 
+insertFile algo (Just (Block (Just idx) need)) (Block _ space) =
     algo idx need space
 
 type Need = Int
@@ -69,7 +69,7 @@ greedyInsert idx need space = (toInsertBlock, insertedBlock : leftover)
     toInsertBlock = if insertedLen < need
         then Just (Block (Just idx) (need - insertedLen))
         else Nothing
-    insertedBlock = Block (Just idx) insertedLen 
+    insertedBlock = Block (Just idx) insertedLen
     leftover = [Block Nothing leftSpace | leftSpace > 0]
 
 wholeInsert :: InsertAlgo
@@ -83,9 +83,9 @@ getScore :: Disk -> Int
 getScore = fst. foldl' go (0, 0)
     where
     go (score, pos) (Block idx len) = (score + calculateForBlock, nextPos)
-        where 
+        where
         nextPos = pos + len
-        calculateForBlock = (fromMaybe 0 idx) * sum [pos .. nextPos - 1] 
+        calculateForBlock = (fromMaybe 0 idx) * sum [pos .. nextPos - 1]
 
 files :: Disk -> [Block]
 files = filter (isJust. idx)

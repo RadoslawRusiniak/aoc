@@ -35,7 +35,7 @@ getResultEasy arr = getResult (length . uniqueReachableSummits arr) arr
 type Scoring = Idx -> Int
 
 getResult :: Scoring -> ParsedInput -> Int
-getResult scoring arr = sum . map scoring . getStarts $ arr
+getResult scoring = sum . map scoring . getStarts
     where
     getStarts = map fst . filter ((== 0) . snd) . Array.assocs
 

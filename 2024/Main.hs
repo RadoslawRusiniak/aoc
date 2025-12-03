@@ -34,7 +34,7 @@ getScore runs = toScore . (!! runs) . iterate blink . toMap
     toScore = sum . Map.elems
 
 blink :: Freq -> Freq
-blink = Map.fromListWith (+) . concatMap toSeparate . map runChange . Map.assocs
+blink = Map.fromListWith (+) . concatMap (toSeparate . runChange) . Map.assocs
     where
     runChange (stone, cnt) = (change stone, cnt)
     toSeparate (stones, cnt) = map (,cnt) stones
