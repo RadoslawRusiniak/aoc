@@ -1,18 +1,4 @@
-import System.IO  
 import System.Environment (getArgs)
-import Control.Monad
-import Control.Monad.State
-import Data.Array
-import Data.List as List
-import Data.Char
-import Data.Foldable
-import Data.Maybe
-import qualified Data.Map as Map
-import Data.Map (Map)
-import qualified Data.Set as Set
-import Data.Set (Set)
-import qualified Data.Sequence as Seq
-import Data.Sequence (Seq)
 
 main :: IO ()
 main = do
@@ -39,10 +25,19 @@ getResultPart1 :: Parsed -> Int
 getResultPart1 = check
 
 getResultPart2 :: Parsed -> Int
-getResultPart2 = const 0
+getResultPart2 = check2
 
 check :: [Rotation] -> Int
 check = length . filter isGood . scanl applyOp 50
   where
     isGood = (== 0)
     applyOp res rot = (res + rot) `mod` 100
+
+check2 :: [Rotation] -> Int
+check2 = sum . map snd . scanl (applyOp . fst) (50, 0)
+  where
+    applyOp pos rot = ((pos + rot) `mod` 100, getScore pos rot)
+
+getScore :: Rotation -> Rotation -> Int    
+getScore pos rot = abs (pos + rot) `div` 100 + if goesThroughZero then 1 else 0
+  where goesThroughZero = signum pos /= 0 && signum pos /= signum (pos + rot)
