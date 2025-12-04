@@ -22,16 +22,20 @@ parse = map parseLine . lines
     parseLine = map digitToInt
 
 getResultPart1 :: Parsed -> Int
-getResultPart1 = sum . map getMax
+getResultPart1 = getScore (getMax 2)
 
 getResultPart2 :: Parsed -> Int
-getResultPart2 = const 0
+getResultPart2 = getScore (getMax 12)
 
-getMax :: [Int] -> Int
-getMax arr = maxVal * 10 + (getSecondVal maxPos arr)
-  where
-    (maxPos, maxVal) = maxWithIndex (init arr)
-    getSecondVal maxPos = maximum . drop (maxPos + 1)
+getScore :: ([Int] -> Int) -> [[Int]] -> Int
+getScore f = sum . map f
+
+getMax :: Int -> [Int] -> Int
+getMax 1 arr = maximum arr
+getMax n arr = maxVal * 10^n + getMax (n-1) (drop (maxPos + 1) arr)
+  where 
+    (maxPos, maxVal) = maxWithIndex curArr
+    curArr = take (length arr - (n-1)) arr
 
 maxWithIndex :: [Int] -> (Int, Int)
 maxWithIndex = maximumBy (comparing snd <> comparing (Down . fst)) . zip [0..]
