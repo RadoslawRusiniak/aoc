@@ -1,6 +1,6 @@
 import System.Environment (getArgs)
-import Data.Char (digitToInt)
-import Data.List (maximumBy)
+import Data.Char (digitToInt, intToDigit)
+import Data.List (maximumBy, unfoldr)
 import Data.Ord (Down(..), comparing)
 
 main :: IO ()
@@ -31,11 +31,18 @@ getScore :: ([Int] -> Int) -> [[Int]] -> Int
 getScore f = sum . map f
 
 getMax :: Int -> [Int] -> Int
-getMax 1 arr = maximum arr
-getMax n arr = maxVal * 10^n + getMax (n-1) (drop (maxPos + 1) arr)
-  where 
-    (maxPos, maxVal) = maxWithIndex curArr
-    curArr = take (length arr - (n-1)) arr
+getMax n arr = digitsToInt (maxDigits n arr)
+
+maxDigits :: Int -> [Int] -> [Int]
+maxDigits n arr = unfoldr step (n, arr)
+  where
+    step (0, _) = Nothing
+    step (m, xs) =
+      let (pos,val) = maxWithIndex (take (length xs - (m-1)) xs)
+      in Just (val, (m-1, drop (pos+1) xs))
 
 maxWithIndex :: [Int] -> (Int, Int)
 maxWithIndex = maximumBy (comparing snd <> comparing (Down . fst)) . zip [0..]
+
+digitsToInt :: [Int] -> Int
+digitsToInt ds = read (map intToDigit ds) :: Int
