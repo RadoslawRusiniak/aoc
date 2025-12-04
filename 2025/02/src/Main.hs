@@ -27,27 +27,36 @@ parseInterval s = (fstInt, sndInt)
     sndInt = read . tail . dropWhile (/= '-') $ s
 
 getResultPart1 :: Parsed -> Int
-getResultPart1 intervals = sum . getInvalidIds intervals . map (repeatInt 2) $ [1 ..]
+getResultPart1 = getResult 2
 
 inAnyInterval :: [Interval] -> Int -> Bool
 inAnyInterval intervals x = any (inInterval x) intervals
 
 getInvalidIds :: [Interval] -> [Int] -> [Int]
-getInvalidIds intervals = filter (inAnyInterval intervals) . takeWhile (<= mxBound)
-  where
-    mxBound = maximum $ map snd intervals
+getInvalidIds intervals = filter (inAnyInterval intervals) . takeWhile (<= maximumValue)
+  where maximumValue = mxBound intervals
+    
+mxBound :: [Interval] -> Int
+mxBound = maximum . map snd
 
 inInterval :: Int -> Interval -> Bool
 inInterval x (left, right) = left <= x && x <= right
 
 getResultPart2 :: Parsed -> Int
-getResultPart2 intervals = sum . mergeElements . map (getInvalidIds intervals . getNumbersForRepetition) $ [2 .. 11]
+getResultPart2 intervals = getResult (mxDigits intervals) intervals
+  where
+    mxDigits = length . show . mxBound
 
-mergeElements :: [[Int]] -> [Int]
-mergeElements = Set.toList . mconcat . map Set.fromList
+type MaxNumberOfRepetitionsToTry = Int
 
-getNumbersForRepetition :: Int -> [Int]
-getNumbersForRepetition n = map (repeatInt n) [1 ..]
+getResult :: MaxNumberOfRepetitionsToTry -> [Interval]  -> Int
+getResult n intervals = sum . eliminateDuplicates . map (getInvalidIds intervals . getRepeatedNumbers) $ [2 .. n]
+
+eliminateDuplicates :: [[Int]] -> [Int]
+eliminateDuplicates = Set.toList . mconcat . map Set.fromList
+
+getRepeatedNumbers :: Int -> [Int]
+getRepeatedNumbers n = map (repeatInt n) [1 ..]
 
 repeatInt :: Int -> Int -> Int
 repeatInt n = read . repeatString n . show
