@@ -1,6 +1,7 @@
 import System.Environment (getArgs)
 import Data.Char (isSpace)
 import Data.Array qualified as Array
+import Data.List (unfoldr)
 import Linear.V2 (V2(..))
 
 main :: IO ()
@@ -24,7 +25,10 @@ parse input = Array.listArray (V2 1 1, V2 rows columns) $ filter (not . isSpace)
     lined = lines input
 
 getResultPart1 :: Parsed -> Int
-getResultPart1 arr = length [ () | ix <- Array.indices arr, isPaper ix, reachable ix ]
+getResultPart1 = length . removableIndices
+  
+removableIndices :: Parsed -> [V2 Int]
+removableIndices arr = [ ix | ix <- Array.indices arr, isPaper ix, reachable ix ]
   where
     isPaper ix = arr Array.! ix == '@'
     reachable ix = (< 4) . length . filter (== '@') $ neighbours ix arr
@@ -37,4 +41,11 @@ neighbours start@(V2 rw cl) arr = [ arr Array.! adj |
       Array.inRange (Array.bounds arr) adj]
 
 getResultPart2 :: Parsed -> Int
-getResultPart2 = const 0
+getResultPart2 = sum . unfoldr step
+  where
+    step arr =
+      let changes = removableIndices arr
+      in if null changes
+        then Nothing
+        else Just (length changes, apply arr changes)
+    apply arr idxs = arr Array.// [ (ix, '.') | ix <- idxs ]
