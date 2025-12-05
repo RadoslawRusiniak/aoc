@@ -12,6 +12,9 @@ type Input = String
 type Parsed = [Interval]
 
 type Interval = (Int, Int)
+type Intervals = [Interval]
+
+type Id = Int
 
 part1, part2 :: Input -> Int
 part1 = getResultPart1 . parse
@@ -21,45 +24,48 @@ parse :: Input -> Parsed
 parse = map parseInterval . splitOn (",")
 
 parseInterval :: String -> Interval
-parseInterval s = (fstInt, sndInt)
-  where
-    fstInt = read . takeWhile (/= '-') $ s
-    sndInt = read . tail . dropWhile (/= '-') $ s
+parseInterval = toTuple . map read . splitOn ("-")
+  where toTuple [x, y] = (x, y)
 
 getResultPart1 :: Parsed -> Int
 getResultPart1 = getResult 2
 
-inAnyInterval :: [Interval] -> Int -> Bool
-inAnyInterval intervals x = any (inInterval x) intervals
-
-getInvalidIds :: [Interval] -> [Int] -> [Int]
-getInvalidIds intervals = filter (inAnyInterval intervals) . takeWhile (<= maximumValue)
-  where maximumValue = mxBound intervals
-    
-mxBound :: [Interval] -> Int
-mxBound = maximum . map snd
-
-inInterval :: Int -> Interval -> Bool
-inInterval x (left, right) = left <= x && x <= right
-
 getResultPart2 :: Parsed -> Int
-getResultPart2 intervals = getResult (mxDigits intervals) intervals
-  where
-    mxDigits = length . show . mxBound
+getResultPart2 intervals = getResult (maxDigits intervals) intervals
+  where maxDigits = length . show . mxBound
 
 type MaxNumberOfRepetitionsToTry = Int
 
-getResult :: MaxNumberOfRepetitionsToTry -> [Interval]  -> Int
-getResult n intervals = sum . eliminateDuplicates . map (getInvalidIds intervals . getRepeatedNumbers) $ [2 .. n]
+getResult :: MaxNumberOfRepetitionsToTry -> Intervals -> Int
+getResult maxRepetitions intervals = 
+  sum . 
+  getInvalidIds intervals .
+  mergeWithoutDuplicates . 
+  map (getRepeatedIds maximumValue) $
+  [2 .. maxRepetitions]
+  where
+    maximumValue = mxBound intervals
 
-eliminateDuplicates :: [[Int]] -> [Int]
-eliminateDuplicates = Set.toList . mconcat . map Set.fromList
+getInvalidIds :: Intervals -> [Id] -> [Id]
+getInvalidIds intervals = filter (flip inAnyInterval intervals)
 
-getRepeatedNumbers :: Int -> [Int]
-getRepeatedNumbers n = map (repeatInt n) [1 ..]
+mxBound :: Intervals -> Int
+mxBound = maximum . map snd
+
+inAnyInterval :: Id -> Intervals -> Bool
+inAnyInterval x = any (inInterval x)
+
+inInterval :: Id -> Interval -> Bool
+inInterval x (left, right) = left <= x && x <= right
+
+mergeWithoutDuplicates :: [[Int]] -> [Int]
+mergeWithoutDuplicates = Set.toList . mconcat . map Set.fromList
+
+getRepeatedIds :: Int -> Int -> [Id]
+getRepeatedIds maxValue repeatFactor = takeWhile (<= maxValue) $ map (repeatInt repeatFactor) [1 ..]
 
 repeatInt :: Int -> Int -> Int
 repeatInt n = read . repeatString n . show
 
 repeatString :: Int -> String -> String
-repeatString n = mconcat . replicate n
+repeatString n = concat . replicate n
