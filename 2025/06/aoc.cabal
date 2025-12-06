@@ -14,5 +14,6 @@ executable aoc
     import:           warnings
     main-is:          Main.hs
     build-depends:    base ^>=4.18.3.0
+                      , split
     hs-source-dirs:   app
     default-language: GHC2021
