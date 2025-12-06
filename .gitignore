@@ -7,3 +7,4 @@
 *.swp
 **/**/Main$
 **/.stack-work
+**/dist-newstyle/
