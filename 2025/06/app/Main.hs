@@ -13,9 +13,8 @@ type Input = String
 type Parsed = (NumbersMatrix, Operations)
 
 type NumbersMatrix = [[Int]]
-type Numbers = [Int]
 type Operations = [Operation]
-data Operation = Mul | Add deriving (Show)
+type Operation = (Int -> Int -> Int)
 
 part1, part2 :: Input -> Int
 part1 = getResultPart1 . parsePart1
@@ -30,19 +29,20 @@ parseNumbers = transpose . map parseLine
     parseLine = map read . words
     
 parseOperations :: String -> Operations
-parseOperations = map (\w -> if w == "+" then Add else Mul) . words
+parseOperations = map (\w -> if w == "+" then (+) else (*)) . words
 
 parsePart2 :: Input -> Parsed
-parsePart2 input = (numbers input, ops input)
-  where
-    numbers = parseVertNumbers . init . lines
-    ops = parseOperations . last . lines
+parsePart2 = (\xs -> (parseVerticalNumbers (init xs), parseOperations (last xs))) . lines
 
-parseVertNumbers :: [String] -> NumbersMatrix
-parseVertNumbers = map readDigitNumbers . splitWhen isBlankLine . init . transpose
+parseVerticalNumbers :: [String] -> NumbersMatrix
+parseVerticalNumbers = 
+  map readGroup .
+  splitWhen isBlankLine .
+  transpose .
+  map init -- needed since "lines" from "parsePart2" only removes '\n' at the end of lines, so I get '\r' at the end of each line
   where
     isBlankLine = all isSpace
-    readDigitNumbers = map readDigitNumber
+    readGroup = map readDigitNumber
     readDigitNumber = read . trim
 
 trim :: String -> String
@@ -50,11 +50,7 @@ trim = dropWhileEnd isSpace . dropWhile isSpace
   where dropWhileEnd f = reverse . dropWhile f . reverse
 
 getResultPart1 :: Parsed -> Int
-getResultPart1 (numbersMatrix, operations) = sum . map (uncurry applyOp) $ zip operations numbersMatrix
-
-applyOp :: (Operation -> Numbers -> Int)
-applyOp Add = foldl1 (+)
-applyOp Mul = foldl1 (*)
+getResultPart1 = sum . map (uncurry $ flip foldr1) . uncurry zip
 
 getResultPart2 :: Parsed -> Int
 getResultPart2 = getResultPart1
