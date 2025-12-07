@@ -1,9 +1,8 @@
 import System.Environment (getArgs)
+import Control.Lens ((^.))
 import Data.Array qualified as Array
 import Data.Char (isSpace)
-import Data.Map qualified as Map
-import Data.Set qualified as Set
-import Linear.V2 (V2(..))
+import Linear.V2 (V2(..), _y)
 
 main :: IO ()
 main = do
@@ -12,7 +11,7 @@ main = do
   print . part2 $ file
 
 type Input = String
-type Parsed = Array.Array (V2 Int) Char
+type Parsed = Array.Array Pos Char
 type Pos = V2 Int
 
 part1, part2 :: Input -> Int
@@ -22,56 +21,51 @@ part2 = getResultPart2 . parse
 parse :: Input -> Parsed
 parse input = 
   let
-    lined = map (filter (not . isSpace)) $ lines input
+    lined = map (filter (not . isSpace)) $ lines input -- filter necessary because of Windows line endings - "lines" cuts only '\n', leaves '\r'
     rows = length lined
     columns = length $ head lined
   in
     Array.listArray (V2 1 1, V2 rows columns) $ filter (not . isSpace) input
 
 getResultPart1 :: Parsed -> Int
-getResultPart1 = Set.size . getUsedBeamSplits
-
-getUsedBeamSplits :: Parsed -> Set.Set Pos
-getUsedBeamSplits arr = fst . foldl go (Set.empty, Set.empty) . Array.indices $ arr
-  where
-    go :: (Set.Set Pos, Set.Set Pos) -> V2 Int -> (Set.Set Pos, Set.Set Pos)
-    go (usedBeams, usedPos) idx@(V2 x y) = 
-      case arr Array.! idx of
-        'S' -> (usedBeams, Set.insert idx usedPos)
-        '.' -> (usedBeams, addIfUp usedPos idx [idx])
-        '^' -> (addIfUp usedBeams idx [idx], addIfUp usedPos idx [V2 x (y-1), V2 x (y+1)])
-      where
-        addIfUp st curPos positionsToAdd =
-          if isUp curPos then
-            Set.union st (Set.fromList positionsToAdd)
-          else
-            st
-        isUp (V2 x y) = Set.member (V2 (x-1) y) usedPos 
+getResultPart1 = fst . getUsedBeamsAndRoads
 
 getResultPart2 :: Parsed -> Int
-getResultPart2 = sum . map snd . Map.toList . getPaths
+getResultPart2 = sum . Array.elems . snd . getUsedBeamsAndRoads
 
+type UsedBeamsCount = Int
+type WaysCount = Int
 type Column = Int
-type Counter = Int
+type State = (UsedBeamsCount, Array.Array Column WaysCount)
 
-getPaths :: Parsed -> Map.Map Column Counter
-getPaths arr = foldl go (Map.empty) . Array.indices $ arr
-  where
-    go :: Map.Map Column Counter -> Pos -> Map.Map Column Counter
-    go roads idx@(V2 x y) =
-      case arr Array.! idx of
-        'S' -> Map.insert y 1 roads
-        '.' -> roads
-        '^' -> addIfUp [y - 1, y + 1]
-      where
-        addIfUp :: [Column] -> Map.Map Column Counter
-        addIfUp positionsToAdd =
-          if isUp then
-            let 
-              upVal = roads Map.! y
-              added = foldl (\mp k -> Map.insertWith (+) k upVal mp) roads $ positionsToAdd
-            in 
-              Map.delete y added
-          else
-            roads
-        isUp = Map.member y roads
+getUsedBeamsAndRoads :: Parsed -> State
+getUsedBeamsAndRoads arr =
+  let
+    startColumn = getColumn $ getStart arr
+    orderedBeamsColumns = map getColumn $ getBeams arr
+    initState = Array.array (1, maxCol) [(idx, val) | idx <- [1..maxCol], let val = if idx == startColumn then 1 else 0]
+    maxCol = getColumn . snd $ Array.bounds arr
+  in
+    foldl applyBeam (0, initState) orderedBeamsColumns
+
+applyBeam :: State -> Column -> State
+applyBeam state@(usedBeams, ways) beamColumn =
+  let
+    curValue = ways Array.! beamColumn
+    curLeft = ways Array.! (beamColumn - 1)
+    curRight = ways Array.! (beamColumn + 1)
+    waysAfterBeam = ways Array.// [(beamColumn, 0), (beamColumn - 1, curLeft + curValue), (beamColumn + 1, curRight + curValue)]
+  in
+    if curValue == 0 then state else (usedBeams + 1, waysAfterBeam)
+
+getStart :: Parsed -> Pos
+getStart = head . getForSymbol 'S'
+
+getBeams :: Parsed -> [Pos]
+getBeams = getForSymbol '^'
+
+getForSymbol :: Char -> Parsed -> [Pos]
+getForSymbol s = map fst . filter ((== s) . snd) . Array.assocs
+
+getColumn :: Pos -> Column
+getColumn = (^. _y)
