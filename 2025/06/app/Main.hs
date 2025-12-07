@@ -21,18 +21,22 @@ part1 = getResultPart1 . parsePart1
 part2 = getResultPart2 . parsePart2
 
 parsePart1 :: Input -> Parsed
-parsePart1 = (\xs -> (parseNumbers (init xs), parseOperations (last xs))) . lines
+parsePart1 = parseToNumbersAndOperations parseNumbers
+
+parsePart2 :: Input -> Parsed
+parsePart2 = parseToNumbersAndOperations parseVerticalNumbers
+
+type NumbersParser = [String] -> NumbersMatrix
+
+parseToNumbersAndOperations :: NumbersParser -> Input -> Parsed
+parseToNumbersAndOperations numbersParser input =
+  let lined = lines input
+  in (numbersParser (init lined), parseOperations (last lined))
 
 parseNumbers :: [String] -> [[Int]]
 parseNumbers = transpose . map parseLine
   where
     parseLine = map read . words
-    
-parseOperations :: String -> Operations
-parseOperations = map (\w -> if w == "+" then (+) else (*)) . words
-
-parsePart2 :: Input -> Parsed
-parsePart2 = (\xs -> (parseVerticalNumbers (init xs), parseOperations (last xs))) . lines
 
 parseVerticalNumbers :: [String] -> NumbersMatrix
 parseVerticalNumbers = 
@@ -42,12 +46,10 @@ parseVerticalNumbers =
   map init -- needed since "lines" from "parsePart2" only removes '\n' at the end of lines, so I get '\r' at the end of each line
   where
     isBlankLine = all isSpace
-    readGroup = map readDigitNumber
-    readDigitNumber = read . trim
+    readGroup = map read
 
-trim :: String -> String
-trim = dropWhileEnd isSpace . dropWhile isSpace
-  where dropWhileEnd f = reverse . dropWhile f . reverse
+parseOperations :: String -> Operations
+parseOperations = map (\w -> if w == "+" then (+) else (*)) . words
 
 getResultPart1 :: Parsed -> Int
 getResultPart1 = sum . map (uncurry $ flip foldr1) . uncurry zip
