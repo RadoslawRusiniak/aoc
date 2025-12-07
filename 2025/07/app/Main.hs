@@ -1,6 +1,7 @@
 import System.Environment (getArgs)
 import Data.Array qualified as Array
 import Data.Char (isSpace)
+import Data.Map qualified as Map
 import Data.Set qualified as Set
 import Linear.V2 (V2(..))
 
@@ -48,4 +49,29 @@ getUsedBeamSplits arr = fst . foldl go (Set.empty, Set.empty) . Array.indices $ 
         isUp (V2 x y) = Set.member (V2 (x-1) y) usedPos 
 
 getResultPart2 :: Parsed -> Int
-getResultPart2 = const 0
+getResultPart2 = sum . map snd . Map.toList . getPaths
+
+type Column = Int
+type Counter = Int
+
+getPaths :: Parsed -> Map.Map Column Counter
+getPaths arr = foldl go (Map.empty) . Array.indices $ arr
+  where
+    go :: Map.Map Column Counter -> Pos -> Map.Map Column Counter
+    go roads idx@(V2 x y) =
+      case arr Array.! idx of
+        'S' -> Map.insert y 1 roads
+        '.' -> roads
+        '^' -> addIfUp [y - 1, y + 1]
+      where
+        addIfUp :: [Column] -> Map.Map Column Counter
+        addIfUp positionsToAdd =
+          if isUp then
+            let 
+              upVal = roads Map.! y
+              added = foldl (\mp k -> Map.insertWith (+) k upVal mp) roads $ positionsToAdd
+            in 
+              Map.delete y added
+          else
+            roads
+        isUp = Map.member y roads
