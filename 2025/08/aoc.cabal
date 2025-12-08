@@ -1,0 +1,21 @@
+cabal-version:   3.12
+name:            aoc
+version:         0.1.0.0
+license:         NONE
+author:          Radoslaw Rusiniak
+maintainer:      Radoslaw.Rusiniak@gmail.com
+build-type:      Simple
+extra-doc-files: CHANGELOG.md
+
+common warnings
+    ghc-options: -Wall
+
+executable aoc
+    import:           warnings
+    main-is:          Main.hs
+    build-depends:    base ^>=4.18.3.0
+                    , array
+                    , linear
+                    , split
+    hs-source-dirs:   app
+    default-language: GHC2021
