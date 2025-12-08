@@ -34,10 +34,12 @@ getResultPart1 :: Parsed -> Int
 getResultPart1 = product . take 3 . getSizes . getGroups 1000
 
 getResultPart2 :: Parsed -> Int
-getResultPart2 = const 0
+getResultPart2 = product . getXs . goUntilAllConnected
+  where
+    getXs (v1, v2) = [x | V3 x _ _ <- [v1, v2]]
 
 type Idx = Int
-type BoxesWithDistance = [(Idx, Idx, Int)]
+type BoxesWithDistance = [((Idx, Box), (Idx, Box), Int)]
 
 type Grouping = Array.Array Int Int
 
@@ -51,7 +53,26 @@ getGroups steps boxes =
   let ordered = orderedDistances boxes
       firstSteps = take steps ordered
       initial = Array.listArray (1, length boxes) (repeat 0)
-  in foldl (\arr (b1, b2, _) -> connect b1 b2 arr) initial firstSteps
+  in foldl (\arr ((i, _), (j, _), _) -> connect i j arr) initial firstSteps
+
+goUntilAllConnected :: Boxes -> (Box, Box)
+goUntilAllConnected boxes =
+  let 
+    ordered = orderedDistances boxes
+    initial = Array.listArray (1, length boxes) (repeat 0)
+  in
+    goWithState initial ordered
+
+goWithState :: Grouping -> BoxesWithDistance -> (Box, Box)
+goWithState _ [] = error "Not all connected"
+goWithState uf (((i, bi), (j, bj), _) : rest) =
+  let 
+    newUf = connect i j uf
+    isAllConnected arr = notElem 0 $ Array.elems arr
+  in 
+    if isAllConnected newUf
+      then (bi, bj)
+      else goWithState newUf rest
 
 connect :: Idx -> Idx -> Grouping -> Grouping
 connect i j uf =
@@ -80,7 +101,7 @@ distances boxes =
   let
     withIndex = zip [1..] boxes
   in
-    [(i, j, qd bi bj) |
+    [((i, bi), (j, bj), qd bi bj) |
       (i, bi) <- withIndex,
       (j, bj) <- withIndex,
       i < j]
