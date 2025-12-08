@@ -62,18 +62,17 @@ goUntilAllConnected boxes =
     initial = Array.listArray (1, length boxes) (repeat 0)
   in
     goWithState initial ordered
-
-goWithState :: Grouping -> BoxesWithDistance -> (Box, Box)
-goWithState _ [] = error "Not all connected"
-goWithState uf (((i, bi), (j, bj), _) : rest) =
-  let 
-    newUf = connect i j uf
-    isAllConnected arr = notElem 0 $ Array.elems arr
-  in 
-    if isAllConnected newUf
-      then (bi, bj)
-      else goWithState newUf rest
-
+    where
+      goWithState _ [] = error "Not all connected"
+      goWithState uf (((i, bi), (j, bj), _) : rest) =
+        let 
+          newUf = connect i j uf
+          isAllConnected arr = notElem 0 $ Array.elems arr
+        in 
+          if isAllConnected newUf
+            then (bi, bj)
+            else goWithState newUf rest
+            
 connect :: Idx -> Idx -> Grouping -> Grouping
 connect i j uf =
   let
